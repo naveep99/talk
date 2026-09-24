@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Gate } from "@/components/Gate";
@@ -18,6 +19,8 @@ function Journey() {
   const dayOffset = useApp((s) => s.dayOffset);
   const { advanceDay, loadSample, reset } = useApp.getState();
   const [engine, setEngine] = useState<string>("…");
+  const [confirmReset, setConfirmReset] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/status").then((r) => r.json()).then((j) => setEngine(j.engine === "claude" ? `Claude (${j.model})` : "Local simulation")).catch(() => setEngine("unknown"));
@@ -113,7 +116,14 @@ function Journey() {
           <div className="btns">
             <button className="btn btn-ghost btn-sm" onClick={advanceDay}>Skip ahead a day</button>
             <button className="btn btn-ghost btn-sm" onClick={() => void loadSample()}>Load sample journey</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => { if (confirm("Reset everything? This clears all conversations.")) { reset(); location.href = "/welcome"; } }}>Reset</button>
+            {confirmReset ? (
+              <>
+                <button className="btn btn-ghost btn-sm" style={{ color: "var(--warn)" }} onClick={() => { reset(); router.replace("/welcome"); }}>Yes, clear everything</button>
+                <button className="btn btn-sm muted" onClick={() => setConfirmReset(false)}>Cancel</button>
+              </>
+            ) : (
+              <button className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(true)}>Reset</button>
+            )}
           </div>
         </details>
       </main>

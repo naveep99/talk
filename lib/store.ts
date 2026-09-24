@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 import { accumulateStats, analyzeMessage, emptyStats } from "./analysis";
 import { CHARACTERS, CHARACTER_ORDER } from "./characters";
 import { applyDeltas, startingState, vibeFromState } from "./dynamics";
@@ -17,6 +17,31 @@ import type {
   TurnSignals,
   UserProfile,
 } from "./types";
+
+// Storage can be missing or blocked (private windows, embedded frames); never let that break the app.
+const safeLocalStorage: StateStorage = {
+  getItem: (k) => {
+    try {
+      return localStorage.getItem(k);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (k, v) => {
+    try {
+      localStorage.setItem(k, v);
+    } catch {
+      /* not persisted this time */
+    }
+  },
+  removeItem: (k) => {
+    try {
+      localStorage.removeItem(k);
+    } catch {
+      /* ignore */
+    }
+  },
+};
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
@@ -199,7 +224,7 @@ export const useApp = create<AppState>()(
     {
       name: "talk-v1",
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
     },
   ),
 );
